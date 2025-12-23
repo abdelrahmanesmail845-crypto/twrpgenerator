@@ -1,0 +1,72 @@
+name: Build TWRP for Samsung A36 (a36xq)
+
+on:
+  workflow_dispatch:
+    inputs:
+      manifest_branch:
+        description: "TWRP Manifest Branch"
+        required: true
+        default: "twrp-14.1"
+
+      device_tree:
+        description: "Device Tree URL"
+        required: true
+        default: "https://github.com/twrpdtgen/android_device_samsung_a36xq"
+
+      device_tree_branch:
+        description: "Device Tree Branch"
+        required: true
+        default: "android-12.1"
+
+      device_path:
+        description: "Device Path"
+        required: true
+        default: "device/samsung/a36xq"
+
+      device_codename:
+        description: "Device Codename"
+        required: true
+        default: "a36xq"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: 📦 Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            git-core gnupg flex bison build-essential zip curl \
+            zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 \
+            libncurses5-dev x11proto-core-dev libx11-dev libgl1-mesa-dev \
+            libxml2-utils xsltproc unzip fontconfig bc ccache \
+            libssl-dev python3 python-is-python3
+
+      - name: 📥 Init TWRP manifest
+        run: |
+          mkdir twrp && cd twrp
+          repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp.git -b ${{ inputs.manifest_branch }}
+          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
+
+      - name: 📂 Clone device tree
+        run: |
+          cd twrp
+          git clone ${{ inputs.device_tree }} -b ${{ inputs.device_tree_branch }} ${{ inputs.device_path }}
+
+      - name: ⚙️ Setup build environment
+        run: |
+          cd twrp
+          source build/envsetup.sh
+          lunch twrp_${{ inputs.device_codename }}-eng
+
+      - name: 🛠️ Build TWRP (vendor_boot)
+        run: |
+          cd twrp
+          mka bootimage
+
+      - name: 📤 Upload vendor_boot.img
+        uses: actions/upload-artifact@v4
+        with:
+          name: TWRP-A36-vendor_boot
+          path: twrp/out/target/product/${{ inputs.device_codename }}/vendor_boot.img
