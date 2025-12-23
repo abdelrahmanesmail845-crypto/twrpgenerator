@@ -52,10 +52,20 @@ jobs:
           cd twrp
           mka bootimage
 
-      - name: 📤 Upload build output
-        uses: actions/upload-artifact@v4
-        with:
-          name: TWRP-A36-output
-          path: |
-            twrp/out/target/product/a36xq/*.img
-            twrp/out/target/product/a36xq/*.lz4
+    - name: 📥 Init TWRP manifest
+        run: |
+          mkdir twrp
+          cd twrp
+          repo init -u https://github.com/TeamWin/android_manifest_twrp.git -b twrp-14.1 --depth=1
+          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
+
+      - name: 📂 Clone device tree
+        run: |
+          cd twrp
+          git clone https://github.com/twrpdtgen/android_device_samsung_a36xq device/samsung/a36xq
+
+      - name: ⚙️ Setup build environment
+        run: |
+          cd twrp
+          source build/envsetup.sh
+          lunch twrp_a36xq-eng
