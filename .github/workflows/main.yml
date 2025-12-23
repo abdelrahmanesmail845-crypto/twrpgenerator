@@ -8,6 +8,15 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+      - name: 🧹 Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          sudo apt clean
+          df -h
+
       - name: 📦 Install dependencies
         run: |
           sudo apt update
@@ -25,12 +34,12 @@ jobs:
           chmod +x ~/bin/repo
           echo "$HOME/bin" >> $GITHUB_PATH
 
-      - name: 📥 Init TWRP manifest (WORKING)
+      - name: 📥 Init TWRP manifest
         run: |
           mkdir twrp
           cd twrp
           repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-14.1
-          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
+          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags --optimized-fetch --prune
 
       - name: 📂 Clone device tree
         run: |
